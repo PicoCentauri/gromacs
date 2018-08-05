@@ -113,12 +113,12 @@ class ElectricFieldData
         {
             if (sigma_ > 0)
             {
-                return a_ * (std::cos(omega_*(t-t0_))
+                return a_ * (std::sin(omega_*(t-t0_))
                              * std::exp(-square(t-t0_)/(2.0*square(sigma_))));
             }
             else
             {
-                return a_ * std::cos(omega_*t);
+                return a_ * std::sin(omega_*t);
             }
         }
 
@@ -295,7 +295,7 @@ void ElectricField::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
         "; Format for electric-field-x, etc. is: four real variables:",
         "; amplitude (V/nm), frequency omega (1/ps), time for the pulse peak (ps),",
         "; and sigma (ps) width of the pulse. Omega = 0 means static field,",
-        "; sigma = 0 means no pulse, leaving the field to be a cosine function."
+        "; sigma = 0 means no pulse, leaving the field to be a sine function."
     };
     builder->addValue<std::string>("comment-electric-field", joinStrings(comment, "\n"));
     efield_[XX].buildMdpOutput(builder, "x");
