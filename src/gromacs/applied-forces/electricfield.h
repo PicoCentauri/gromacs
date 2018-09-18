@@ -48,9 +48,12 @@ class IMDModule;
  * The returned class describes the time dependent electric field that can
  * be applied to all charges in a simulation. The field is described
  * by the following:
- *     E(t) = A cos(omega*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(sigma)));
+ *     E(t) = - A Exp(-square(t-t0)/(2.0*square(sigma)))
+ *                     * ((t-t0)/square(sigma) * Cos(omega_*(t-t0))
+ *                                     + omega * Sin(omega_*(t-t0)))
  * If sigma = 0 there is no pulse and we have instead
- *     E(t) = A cos(omega*t)
+ *     E(t) = - A ((t-t0)/square(sigma) * Cos(omega_*(t-t0))
+ *                              + omega * Sin(omega_*(t-t0)))
  *
  * force is kJ mol^-1 nm^-1 = e * kJ mol^-1 nm^-1 / e
  *

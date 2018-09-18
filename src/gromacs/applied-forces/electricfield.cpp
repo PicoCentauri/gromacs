@@ -81,7 +81,7 @@ namespace
 class ElectricFieldData
 {
     public:
-        ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
+        ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0), phi_(0)
         {
         }
 
@@ -95,13 +95,14 @@ class ElectricFieldData
             section.addOption(RealOption("omega").store(&omega_));
             section.addOption(RealOption("t0").store(&t0_));
             section.addOption(RealOption("sigma").store(&sigma_));
+            section.addOption(RealOption("phi").store(&phi_));
         }
         /*! \brief
          * Creates mdp parameters for this field component.
          */
         void buildMdpOutput(KeyValueTreeObjectBuilder *builder, const std::string &name) const
         {
-            builder->addUniformArray<real>("electric-field-" + name, {a_, omega_, t0_, sigma_});
+            builder->addUniformArray<real>("electric-field-" + name, {a_, omega_, t0_, sigma_, phi_});
         }
 
         /*! \brief Evaluates this field component at given time.
@@ -113,12 +114,13 @@ class ElectricFieldData
         {
             if (sigma_ > 0)
             {
-                return a_ * (std::sin(omega_*(t-t0_))
-                             * std::exp(-square(t-t0_)/(2.0*square(sigma_))));
+                return 2.0*a_*std::exp(-square(t-t0_)/square(sigma_))
+                      * ((t-t0_)/square(sigma_)*std::cos(phi_+2.0*M_PI*omega_*(t-t0_)) 
+                        + omega_*M_PI*std::sin(phi_+2.0*M_PI*omega_*(t-t0_)));
             }
             else
             {
-                return a_ * std::sin(omega_*t);
+                return -a_ * std::sin(omega_*(t-t0_));
             }
         }
 
@@ -129,12 +131,13 @@ class ElectricFieldData
          * \param[in] t0    Peak of the pulse
          * \param[in] sigma Width of the pulse
          */
-        void setField(real a, real omega, real t0, real sigma)
+        void setField(real a, real omega, real t0, real sigma, real phi)
         {
             a_     = a;
             omega_ = omega;
             t0_    = t0;
             sigma_ = sigma;
+            phi_   = phi;
         }
 
         //! Return the amplitude
@@ -145,6 +148,8 @@ class ElectricFieldData
         real t0()    const { return t0_; }
         //! Return the width of the pulse (0 means inifinite)
         real sigma() const { return sigma_; }
+        //! Return the phase shift of the oscillation
+        real phi() const { return sigma_; }
 
     private:
         //! Coeffient (V / nm)
@@ -155,6 +160,8 @@ class ElectricFieldData
         real t0_;
         //! Width of pulse (ps, if zero there is no pulse)
         real sigma_;
+        //! phase shift of the oscillation (ps)
+        real phi_;
 };
 
 /*! \internal
@@ -237,6 +244,12 @@ class ElectricField final : public IMDModule,
          * \return Width of the pulse
          */
         real sigma(int dim) const { return efield_[dim].sigma(); }
+        /*! \brief Return phase shift of the oscillation
+         *
+         * \param[in] dim Direction of the field (XX, YY, ZZ)
+         * \return phase shift of the oscillation
+         */
+        real phi(int dim) const { return efield_[dim].sigma(); }
 
         /*! \brief Print the field components to a file
          *
@@ -260,14 +273,15 @@ void convertParameters(gmx::KeyValueTreeObjectBuilder *builder,
     {
         return;
     }
-    if (sxt.size() != 4)
+    if (sxt.size() != 5)
     {
-        GMX_THROW(InvalidInputError("Please specify E0 omega t0 sigma for electric fields"));
+        GMX_THROW(InvalidInputError("Please specify E0 omega t0 sigma phi for electric fields"));
     }
     builder->addValue<real>("E0", fromString<real>(sxt[0]));
     builder->addValue<real>("omega", fromString<real>(sxt[1]));
     builder->addValue<real>("t0", fromString<real>(sxt[2]));
     builder->addValue<real>("sigma", fromString<real>(sxt[3]));
+    builder->addValue<real>("phi", fromString<real>(sxt[3]));
 }
 
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
